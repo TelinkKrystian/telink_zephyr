@@ -15,6 +15,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME, CONFIG_STREAM_FLASH_LOG_LEVEL);
 #include <zephyr/drivers/flash.h>
 
 #include <zephyr/storage/stream_flash.h>
+#include "plic.h"
 
 #ifdef CONFIG_STREAM_FLASH_PROGRESS
 #include <zephyr/settings/settings.h>
@@ -104,6 +105,10 @@ int stream_flash_erase_page(struct stream_flash_ctx *ctx, off_t off)
 
 #endif /* CONFIG_STREAM_FLASH_ERASE */
 
+#if CHECK_PENDING_IRQS
+unsigned long irqs1;
+#endif // CHECK_PENDING_IRQS
+
 static int flash_sync(struct stream_flash_ctx *ctx)
 {
 	int rc = 0;
@@ -139,7 +144,17 @@ static int flash_sync(struct stream_flash_ctx *ctx)
 	}
 
 	buf_bytes_aligned = ctx->buf_bytes + fill_length;
+
+#if CHECK_PENDING_IRQS
+	irqs1 = (*(volatile unsigned long*)(0 + (0xe4001000)));
+	LOG_INF("Before writing to FLASH: pending_irqs: 0x%lX", irqs1);
+#endif // CHECK_PENDING_IRQS
+
 	rc = flash_write(ctx->fdev, write_addr, ctx->buf, buf_bytes_aligned);
+
+#if CHECK_PENDING_IRQS
+	LOG_INF("After write to FLASH: pending_irqs: 0x%lX", irqs1);
+#endif // CHECK_PENDING_IRQS
 
 	if (rc != 0) {
 		LOG_ERR("flash_write error %d offset=0x%08zx", rc,
