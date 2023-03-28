@@ -22,6 +22,8 @@
 #include "img_mgmt/img_mgmt.h"
 #include "img_mgmt/img_mgmt_config.h"
 #include "img_mgmt_priv.h"
+#include "plic.h"
+#include <zephyr/drivers/gpio.h>
 
 #ifdef CONFIG_IMG_ENABLE_IMAGE_CHECK
 #include <zephyr/dfu/flash_img.h>
@@ -514,8 +516,24 @@ img_mgmt_upload(struct smp_streamer *ctxt)
 			last = true;
 		}
 
+#if (0)	// Mock the flash write func to see if without writing operations to flash it works correctly regarding DFU
+
+#define LED1_NODE DT_ALIAS(led1)
+static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED1_NODE, gpios);
+
+		// plic_preempt_feature_en();
+		unsigned int r=plic_enter_critical_sec(0, 1);
+		gpio_pin_set_dt(&led, 1);
+		k_usleep(50);
+		rc = 0;
+		gpio_pin_set_dt(&led, 0);
+		plic_exit_critical_sec(0,r);
+		// plic_preempt_feature_dis();
+#else
 		rc = img_mgmt_write_image_data(req.off, req.img_data.value, action.write_bytes,
 						    last);
+#endif
+
 		if (rc == 0) {
 			g_img_mgmt_state.off += action.write_bytes;
 		} else {
