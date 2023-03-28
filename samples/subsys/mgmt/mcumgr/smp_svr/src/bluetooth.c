@@ -53,9 +53,25 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	k_work_submit(&advertise_work);
 }
 
+bool ale_param_req(struct bt_conn *conn, struct bt_le_conn_param *param)
+{
+	LOG_INF("Interval min: %d, interval max: %d, latency: %d, timeout: %d",
+	param->interval_min, param->interval_max, param->latency, param->timeout);
+
+	return true;
+}
+
+void ale_param_updated(struct bt_conn *conn, uint16_t interval, uint16_t latency, uint16_t timeout)
+{
+	LOG_INF("Updated Interval: %d, latency: %d, timeout: %d",
+	interval, latency, timeout);
+}
+
 BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.connected = connected,
 	.disconnected = disconnected,
+	.le_param_req = ale_param_req,
+	.le_param_updated = ale_param_updated,
 };
 
 static void bt_ready(int err)
