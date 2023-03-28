@@ -12,6 +12,10 @@
 #include <zephyr/sys_clock.h>
 #include <zephyr/spinlock.h>
 #include <zephyr/irq.h>
+#include <zephyr/drivers/gpio.h>
+
+#define LED3_NODE DT_ALIAS(led3)
+static const struct gpio_dt_spec led3 = GPIO_DT_SPEC_GET(LED3_NODE, gpios);
 
 /* andestech,machine-timer */
 #if DT_HAS_COMPAT_STATUS_OKAY(andestech_machine_timer)
@@ -109,6 +113,7 @@ static uint64_t mtime(void)
 
 static void timer_isr(const void *arg)
 {
+	gpio_pin_set_dt(&led3, 1);
 	ARG_UNUSED(arg);
 
 	k_spinlock_key_t key = k_spin_lock(&lock);
@@ -128,6 +133,7 @@ static void timer_isr(const void *arg)
 
 	k_spin_unlock(&lock, key);
 	sys_clock_announce(IS_ENABLED(CONFIG_TICKLESS_KERNEL) ? dticks : 1);
+	gpio_pin_set_dt(&led3, 0);
 }
 
 void sys_clock_set_timeout(int32_t ticks, bool idle)
