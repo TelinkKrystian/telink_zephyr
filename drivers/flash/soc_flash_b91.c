@@ -58,6 +58,9 @@ static int flash_b91_init(const struct device *dev)
 
 	k_sem_init(&dev_data->write_lock, 1, 1);
 
+	// Set priority threshold
+	flash_plic_preempt_config(1, 1);
+
 	return 0;
 }
 
